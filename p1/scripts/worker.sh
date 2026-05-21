@@ -9,3 +9,5 @@ export K3S_TOKEN=$(cat /vagrant/node-token)
 
 # Install K3s in agent (worker) mode
 curl -sfL https://get.k3s.io | sh -
+
+echo "alias k='kubectl'" >>/home/vagrant/.bashrc

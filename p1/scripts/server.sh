@@ -15,3 +15,5 @@ done
 
 # Copy the token to the shared vagrant folder so the worker can read it
 cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
+
+echo "alias k='kubectl'" >>/home/vagrant/.bashrc
