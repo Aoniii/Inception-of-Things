@@ -4,9 +4,7 @@
 set -e
 
 echo "=== Uninstalling Docker ==="
-if ! command -v docker >/dev/null 2>&1; then
-  echo "Docker already uninstalled."
-else
+if command -v docker >/dev/null 2>&1; then
   apt remove -y docker-ce docker-ce-cli containerd.io
   apt autoremove -y
   rm -rf /var/lib/docker/
@@ -15,8 +13,22 @@ else
   rm -f /etc/apt/keyrings/docker.asc
 
   echo "Docker uninstalled."
+else
+  echo "Docker already uninstalled."
 fi
 
 echo "=== Uninstalling kubectl ==="
+if command -v kubectl >/dev/null 2>&1; then
+  rm -f /usr/local/bin/kubectl
+  echo "kubectl uninstalled."
+else
+  echo "kubectl already uninstalled."
+fi
 
 echo "=== Uninstalling K3d ==="
+if command -v k3d >/dev/null 2>&1; then
+  rm -f /usr/local/bin/k3d
+  echo "K3d uninstalled."
+else
+  echo "K3d already uninstalled."
+fi
