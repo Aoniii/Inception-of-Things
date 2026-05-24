@@ -4,7 +4,7 @@
 set -e
 
 # Create K3d cluster and expose port 8888 from host to loadbalancer for wil-playground app
-k3d cluster create iot --port "8888:8888@loadbalancer"
+k3d cluster create iot --port "8888:30888@loadbalancer"
 
 # Create namespace
 kubectl create namespace argocd
