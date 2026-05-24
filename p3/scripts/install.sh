@@ -33,6 +33,9 @@ if ! command -v docker >/dev/null 2>&1; then
   apt update
   apt install -y docker-ce docker-ce-cli containerd.io
 
+  usermod -aG docker $SUDO_USER
+  chmod 666 /var/run/docker.sock
+
   echo "Docker installed."
 else
   echo "Docker already installed."
