@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/Aoniii/snourry-iot
+    repoURL: http://gitlab-webservice-default.gitlab.svc.cluster.local:8181/root/snourry-iot.git
     targetRevision: HEAD
     path: manifests
   destination:

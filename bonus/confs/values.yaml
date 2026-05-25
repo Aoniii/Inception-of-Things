@@ -54,6 +54,11 @@ certmanager-issuer:
 
 nginx-ingress:
   enabled: true
+  controller:
+    service:
+      type: NodePort
+      nodePorts:
+        https: 30443
 
 prometheus:
   install: false
