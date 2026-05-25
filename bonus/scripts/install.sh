@@ -59,8 +59,17 @@ else
   echo "K3d already installed."
 fi
 
+echo "=== Installing Helm ==="
+if ! command -v helm >/dev/null 2>&1; then
+  curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  echo "Helm installed."
+else
+  echo "Helm already installed."
+fi
+
 echo ""
 echo "=== Installing complete ==="
 echo "Docker: $(docker --version)"
 echo "kubectl: $(kubectl version --client | sed '1{N;s/\n/, /}')"
 echo "K3d: $(k3d --version | sed '1{N;s/\n/, /}')"
+echo "helm: $(helm version)"

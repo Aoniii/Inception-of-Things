@@ -34,3 +34,11 @@ if command -v k3d >/dev/null 2>&1; then
 else
   echo "K3d already uninstalled."
 fi
+
+echo "=== Uninstalling helm ==="
+if command -v helm >/dev/null 2>&1; then
+  rm -f /usr/local/bin/helm
+  echo "helm uninstalled."
+else
+  echo "helm already uninstalled."
+fi
