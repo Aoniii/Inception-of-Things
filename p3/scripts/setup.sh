@@ -1,6 +1,9 @@
 #!/bin/sh
 # Usage: ./setup.sh
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+CONFS_DIR="$SCRIPT_DIR/../confs"
+
 set -e
 
 # Create K3d cluster and expose port 8888 from host to loadbalancer for wil-playground app
@@ -15,4 +18,4 @@ kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubuse
 
 # Wait for Argo CD to be ready before applying the application config
 kubectl wait --for=condition=Available deployment/argocd-server -n argocd --timeout=300s
-kubectl apply -f ../confs/argocd-app.yaml
+kubectl apply -f "$CONFS_DIR/argocd-app.yaml"
