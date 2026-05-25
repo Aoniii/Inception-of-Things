@@ -88,7 +88,99 @@ kubectl get pods -l app=app-2
 
 ## Part 3: K3d and Argo CD
 
-...
+A K3d cluster running Argo CD for continuous deployment. Argo CD watches a public GitHub repository and automatically deploys application updates to the `dev` namespace.
+
+### Architecture
+- **Namespace `argocd`** — contains all Argo CD components (server, repo-server, controller, etc.)
+- **Namespace `dev`** — contains the deployed application (`wil42/playground`)
+- **GitHub repo** — stores the Kubernetes manifests that Argo CD watches
+- **Docker Hub** — hosts the `wil42/playground` image (tags `v1` and `v2`)
+
+### GitHub Repository
+Part 3 requires a public GitHub repository that Argo CD watches for changes. The repository contains the Kubernetes manifests (deployment and service) for the `wil42/playground` application.
+
+Repository: [snourry-iot](https://github.com/Aoniii/snourry-iot)
+
+When you push a change to this repository (for example, changing the image tag from `v1` to `v2`), Argo CD automatically detects the update and redeploys the application in the `dev` namespace.
+
+### Step 1 — Install prerequisites
+```sh
+cd p3
+sudo ./scripts/install.sh
+```
+This installs Docker, kubectl, and K3d.
+
+### Step 2 — Create the cluster and deploy
+```sh
+./scripts/setup.sh
+```
+This creates the K3d cluster, installs Argo CD, creates the namespaces, and deploys the application.
+
+#### Verify the cluster is running
+```sh
+kubectl get nodes
+```
+Expected: one node `k3d-iot-server-0` in `Ready` status.
+
+#### Verify namespaces
+```sh
+kubectl get ns
+```
+Expected: `argocd` and `dev` namespaces both `Active`.
+
+#### Verify Argo CD pods
+```sh
+kubectl get pods -n argocd
+```
+Expected: all pods in `Running` status (argocd-server, argocd-repo-server, argocd-application-controller, etc.). If some pods are in `ContainerCreating`, wait 1-2 minutes and check again.
+
+#### Verify the application pod
+```sh
+kubectl get pods -n dev
+```
+Expected: `wil-playground` pod in `Running` status. If the namespace is empty, check Argo CD sync status:
+```sh
+kubectl get applications -n argocd
+```
+If status is `OutOfSync`, check for errors:
+```sh
+kubectl describe application wil-playground -n argocd
+```
+Look at the `Events` and `Status.Operation State.Message` sections for details.
+
+#### Verify the service
+```sh
+kubectl get svc -n dev
+```
+Expected: `wil-playground` service with type `NodePort` and nodePort `30888`.
+
+### Step 3 — Test the application (v1)
+```sh
+curl http://localhost:8888/
+```
+Expected: `{"status":"ok", "message": "v1"}`
+
+If you get "Empty reply from server" or "Connection refused":
+1. Check that the service is `NodePort` (not `ClusterIP`): `kubectl get svc -n dev`
+2. Check that the pod is running: `kubectl get pods -n dev`
+3. Check the K3d port mapping: `docker ps` and look for the loadbalancer container
+
+### Step 4 — Update to v2 (continuous deployment)
+In your GitHub repository, edit `manifests/deployment.yaml` and change:
+```yaml
+image: wil42/playground:v1
+```
+to:
+```yaml
+image: wil42/playground:v2
+```
+Commit and push the change. Argo CD will automatically detect the update and synchronize (this takes up to 3 minutes).
+
+### Cleanup
+```sh
+./scripts/clean.sh
+```
+This deletes the K3d cluster and all associated resources.
 
 ## Useful Vagrant commands
 
