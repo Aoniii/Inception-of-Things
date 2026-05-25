@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-registry-storage
+  namespace: gitlab
+type: Opaque
+stringData:
+  config: |
+    s3:
+      accesskey: minio
+      secretkey: minio-password
+      region: us-east-1
+      regionendpoint: http://minio.gitlab.svc.cluster.local:9000
+      bucket: gitlab-registry
+      v4auth: true
