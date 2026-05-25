@@ -182,6 +182,104 @@ Commit and push the change. Argo CD will automatically detect the update and syn
 ```
 This deletes the K3d cluster and all associated resources.
 
+## Bonus: GitLab
+
+Replaces GitHub with a local GitLab instance running inside the K3d cluster. Argo CD watches the GitLab repository instead of GitHub for automated continuous deployment.
+
+### Architecture
+- **Namespace `argocd`** — Argo CD components
+- **Namespace `dev`** — deployed application (`wil42/playground`)
+- **Namespace `gitlab`** — GitLab instance with PostgreSQL, Redis, and MinIO
+- **GitLab local repo** — stores the Kubernetes manifests that Argo CD watches
+- **Docker Hub** — hosts the `wil42/playground` image (tags `v1` and `v2`)
+
+### Prerequisites
+Run the install script from Part 3 if not already done:
+```sh
+cd bonus
+sudo ./scripts/install.sh
+```
+
+### Step 1 — Create the cluster and deploy everything
+```sh
+./scripts/setup.sh
+```
+This creates the K3d cluster, installs Argo CD, deploys PostgreSQL, Redis, MinIO, and GitLab. This takes approximately 5-10 minutes.
+
+#### Verify GitLab pods
+```sh
+kubectl get pods -n gitlab
+```
+Wait until `gitlab-webservice-default` shows `2/2 Running` and `gitlab-migrations` shows `Completed`. This can take 5-10 minutes.
+
+### Step 2 — Configure GitLab and connect Argo CD
+Once all GitLab pods are running:
+```sh
+./scripts/gitlab-setup.sh
+```
+This script:
+1. Retrieves the GitLab root password
+2. Adds `gitlab.gitlab.local` to `/etc/hosts`
+3. Waits for GitLab to be accessible
+4. Clones the manifests from GitHub and pushes them to the local GitLab
+5. Makes the GitLab project public
+6. Configures Argo CD to watch the GitLab repository
+
+### Step 3 — Test the application (v1)
+```sh
+curl http://localhost:8888/
+```
+Expected: `{"status":"ok", "message": "v1"}`
+
+If you get "Empty reply from server":
+1. Check Argo CD sync status: `kubectl get applications -n argocd`
+2. Check for errors: `kubectl describe application wil-playground -n argocd | grep "Message"`
+3. Check pods in dev: `kubectl get pods -n dev`
+4. Check service in dev: `kubectl get svc -n dev`
+
+### Step 4 — Access GitLab UI
+Open in your browser: `https://gitlab.gitlab.local:8443`
+
+Accept the self-signed certificate. Login credentials:
+- Username: `root`
+- Password: retrieve with:
+```sh
+kubectl get secret gitlab-gitlab-initial-root-password -n gitlab -o jsonpath="{.data.password}" | base64 -d
+echo
+```
+
+### Step 5 — Update to v2 (continuous deployment via GitLab)
+1. Open `https://gitlab.gitlab.local:8443`
+2. Navigate to the project `root/snourry-iot`
+3. Edit `manifests/deployment.yaml`
+4. Change `image: wil42/playground:v1` to `image: wil42/playground:v2`
+5. Commit the change
+
+Wait 1-3 minutes for Argo CD to synchronize.
+
+#### Monitor the sync
+```sh
+kubectl get applications -n argocd
+```
+Wait until `SYNC STATUS` shows `Synced`.
+
+#### Verify the update
+```sh
+curl http://localhost:8888/
+```
+Expected: `{"status":"ok", "message": "v2"}`
+
+#### Check the pod was updated
+```sh
+kubectl get pods -n dev
+```
+The pod name should have changed (new pod created with the v2 image).
+
+### Cleanup
+```sh
+./scripts/clean.sh
+```
+
 ## Useful Vagrant commands
 
 | Command | Description |
