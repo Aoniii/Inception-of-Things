@@ -12,7 +12,7 @@ if command -v docker >/dev/null 2>&1; then
   rm -f /etc/apt/sources.list.d/docker.list
   rm -f /etc/apt/keyrings/docker.asc
 
-  sudo gpasswd -d $SUDO_USER docker
+  gpasswd -d $SUDO_USER docker || true
 
   echo "Docker uninstalled."
 else

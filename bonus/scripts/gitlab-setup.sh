@@ -38,17 +38,24 @@ GIT_SSL_NO_VERIFY=true git push gitlab main
 # Make the project public
 kubectl exec -n gitlab deploy/gitlab-toolbox -- gitlab-rails runner "p = Project.find(1); p.visibility_level = 20; p.save!; puts p.visibility_level"
 
-# Wait for visibility change to propagate
-sleep 30
-
 # Delete old app if exists and recreate
 kubectl delete application wil-playground -n argocd 2>/dev/null || true
-sleep 10
+
+# Wait until the repo is accessible from inside the cluster
+echo "Waiting for GitLab repo to be accessible from Argo CD..."
+until kubectl exec -n argocd deploy/argocd-repo-server -- wget -qO- http://gitlab-webservice-default.gitlab.svc.cluster.local:8181/root/snourry-iot 2>/dev/null | grep -q "snourry-iot"; do
+  sleep 5
+done
+echo "GitLab repo is accessible!"
+
 kubectl apply -f "$CONFS_DIR/argocd-app.yaml"
 
-# Wait for sync
-echo "Waiting for Argo CD to sync..."
-sleep 30
+# Wait for application to sync and deploy
+echo "Waiting for application to sync..."
+until kubectl get pods -n dev 2>/dev/null | grep -q "Running"; do
+  sleep 5
+done
+echo "Application deployed!"
 
 # Cleanup temp dir
 rm -rf "$TEMP_DIR"
