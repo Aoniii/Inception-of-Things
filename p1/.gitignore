@@ -1,2 +1,4 @@
 /.vagrant
-node-token
+/node-token
+/k3s
+/k3s-install.sh
