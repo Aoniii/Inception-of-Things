@@ -30,7 +30,7 @@ if ! grep -qE 'vmx|svm' /proc/cpuinfo; then
 fi
 
 apt-get update
-apt-get install -y wget net-tools
+apt-get install -y wget curl net-tools
 
 #   VirtualBox
 
