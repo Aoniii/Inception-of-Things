@@ -1,75 +1,94 @@
 #!/bin/sh
-# Usage: sudo ./install.sh
+# Usage: sudo ./scripts/install.sh
+# Target: Ubuntu 24.04 LTS
+#
+# Installs what the bonus needs: Docker, kubectl, K3d and Helm.
 
 set -e
 
-apt update
-apt install -y ca-certificates curl
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root: sudo ./scripts/install.sh" >&2
+    exit 1
+fi
+
+. /etc/os-release
+if [ "$ID" != "ubuntu" ] || [ "$VERSION_ID" != "24.04" ]; then
+    echo "This project targets Ubuntu 24.04 LTS only (found: $PRETTY_NAME)." >&2
+    exit 1
+fi
+
+apt-get update
+apt-get install -y ca-certificates curl
 
 echo "=== Installing Docker ==="
 if ! command -v docker >/dev/null 2>&1; then
-  install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-  chmod a+r /etc/apt/keyrings/docker.asc
+    install -m 0755 -d /etc/apt/keyrings
+    curl -4 -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    chmod a+r /etc/apt/keyrings/docker.asc
 
-  . /etc/os-release
-  case "$ID" in
-  ubuntu)
-    DOCKER_REPO="https://download.docker.com/linux/ubuntu"
-    CODENAME="${VERSION_CODENAME:-noble}"
-    ;;
-  debian)
-    DOCKER_REPO="https://download.docker.com/linux/debian"
-    CODENAME="${VERSION_CODENAME:-bookworm}"
-    ;;
-  *)
-    echo "Unsupported OS: $ID"
-    exit 1
-    ;;
-  esac
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $VERSION_CODENAME stable" >/etc/apt/sources.list.d/docker.list
 
-  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] $DOCKER_REPO $CODENAME stable" | tee /etc/apt/sources.list.d/docker.list >/dev/null
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io
 
-  apt update
-  apt install -y docker-ce docker-ce-cli containerd.io
+    if [ -n "$SUDO_USER" ]; then
+        usermod -aG docker "$SUDO_USER"
+    fi
 
-  usermod -aG docker $SUDO_USER
-  chmod 666 /var/run/docker.sock
-
-  echo "Docker installed."
+    echo "Docker installed."
 else
-  echo "Docker already installed."
+    echo "Docker already installed."
+fi
+
+# group membership only applies to a new login session, so open the socket now
+# to keep setup.sh usable in the same shell
+if [ -S /var/run/docker.sock ]; then
+    chmod 666 /var/run/docker.sock
 fi
 
 echo "=== Installing kubectl ==="
 if ! command -v kubectl >/dev/null 2>&1; then
-  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-  install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-  rm kubectl
-  echo "kubectl installed."
+    TMP=$(mktemp -d)
+    KVER=$(curl -4 -L -s https://dl.k8s.io/release/stable.txt)
+    curl -4 -Lo "$TMP/kubectl" "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl"
+    install -o root -g root -m 0755 "$TMP/kubectl" /usr/local/bin/kubectl
+    rm -rf "$TMP"
+    echo "kubectl installed."
 else
-  echo "kubectl already installed."
+    echo "kubectl already installed."
 fi
 
 echo "=== Installing K3d ==="
 if ! command -v k3d >/dev/null 2>&1; then
-  curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-  echo "K3d installed."
+    curl -4 -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+    echo "K3d installed."
 else
-  echo "K3d already installed."
+    echo "K3d already installed."
 fi
 
 echo "=== Installing Helm ==="
 if ! command -v helm >/dev/null 2>&1; then
-  curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-  echo "Helm installed."
+    curl -4 -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+    echo "Helm installed."
 else
-  echo "Helm already installed."
+    echo "Helm already installed."
 fi
 
 echo ""
 echo "=== Installing complete ==="
-echo "Docker: $(docker --version)"
-echo "kubectl: $(kubectl version --client | sed '1{N;s/\n/, /}')"
-echo "K3d: $(k3d --version | sed '1{N;s/\n/, /}')"
-echo "helm: $(helm version)"
+
+report() {
+    label="$1"
+    bin="$2"
+    shift 2
+    if command -v "$bin" >/dev/null 2>&1; then
+        printf '%-9s %s\n' "$label" "$("$@" 2>/dev/null | head -1)"
+    else
+        printf '%-9s %s\n' "$label" "not installed"
+    fi
+}
+
+report "Docker:" docker docker --version
+report "kubectl:" kubectl kubectl version --client
+report "K3d:" k3d k3d version
+report "Helm:" helm helm version --short
