@@ -1,5 +1,5 @@
 #!/bin/sh
-# Usage: sudo ./install_host.sh
+# Usage: sudo ./install-host.sh
 # Installs what Parts 1 and 2 need on the host VM: VirtualBox and Vagrant.
 # Parts 3 and bonus use their own script (p3/scripts/install.sh, bonus/scripts/install.sh).
 
@@ -68,6 +68,16 @@ if ! command -v vagrant >/dev/null 2>&1; then
     echo "Vagrant installed."
 else
     echo "Vagrant already installed."
+fi
+
+#   check vboxdrv
+
+if ! lsmod | grep -q '^vboxdrv'; then
+    if ! modprobe vboxdrv 2>/dev/null; then
+        echo "ERROR: the vboxdrv module is not loaded." >&2
+        echo "Inspect the dkms build with 'dkms status', then rebuild with '/sbin/vboxconfig'." >&2
+        exit 1
+    fi
 fi
 
 #   Summary
