@@ -57,14 +57,24 @@ else
     ko "k3s service is '$s'"
 fi
 
-# Traefik is the ingress controller K3s ships with: without it nothing routes
-if vm "kubectl get pods -n kube-system --no-headers" | grep traefik | grep -q Running; then
+# Traefik is deployed by a job on first boot, it can take a few minutes
+i=0
+while [ "$i" -lt 60 ]; do
+    traefik=$(vm "kubectl get pods -n kube-system --no-headers")
+    echo "$traefik" | grep traefik | grep -q Running && break
+    i=$((i + 1))
+    sleep 5
+done
+if echo "$traefik" | grep traefik | grep -q Running; then
     ok "Traefik ingress controller is Running"
 else
     ko "Traefik is not Running"
 fi
 
 echo "=== Deployments ==="
+# let the pods settle before judging them: images have to be pulled first
+vm "kubectl wait --for=condition=Available deployment --all --timeout=300s" >/dev/null 2>&1
+
 deploys=$(vm "kubectl get deployments --no-headers")
 echo "$deploys" | sed 's/^/         /'
 

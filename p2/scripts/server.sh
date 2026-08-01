@@ -12,7 +12,7 @@ export INSTALL_K3S_VERSION="v1.36.2+k3s1"
 
 curl -sfL https://get.k3s.io | sh -
 
-while ! kubectl get nodes 2>/dev/null | grep -q "Ready"; do
+while ! kubectl wait --for=condition=Ready node --all --timeout=10s >/dev/null 2>&1; do
     sleep 1
 done
 
