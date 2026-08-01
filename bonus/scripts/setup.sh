@@ -106,8 +106,7 @@ kubectl create secret generic gitlab-redis-password \
 helm upgrade --install gitlab gitlab/gitlab \
     --namespace gitlab \
     -f "$CONFS_DIR/values.yaml" \
-    --version "$GITLAB_VERSION" \
-    --skip-schema-validation
+    --version "$GITLAB_VERSION"
 
 echo ""
 echo "=== Cluster ready ==="

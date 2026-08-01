@@ -5,7 +5,8 @@ for vm in snourryS snourrySW; do
     VBoxManage unregistervm "$vm" --delete 2>/dev/null
 done
 
-rm -rf ~/iot/p1/.vagrant ~/iot/p2/.vagrant
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+rm -rf "$SCRIPT_DIR/p1/.vagrant" "$SCRIPT_DIR/p2/.vagrant"
 k3d cluster delete iot 2>/dev/null
 
 echo "--- VMs ---"
