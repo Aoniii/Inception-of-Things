@@ -16,6 +16,7 @@ REDIS_VERSION="27.0.18"
 GITLAB_VERSION="10.0.0"
 
 #   Cluster
+CLUSTER_MEMORY="8g"
 
 # p3 and the bonus share the cluster name, so start from a clean one
 if k3d cluster list --no-headers 2>/dev/null | grep -q '^iot '; then
@@ -23,7 +24,7 @@ if k3d cluster list --no-headers 2>/dev/null | grep -q '^iot '; then
     k3d cluster delete iot
 fi
 
-k3d cluster create iot --port "8888:30888@loadbalancer" --port "8443:30443@loadbalancer" --servers-memory 12g
+k3d cluster create iot --port "8888:30888@loadbalancer" --port "8443:30443@loadbalancer" --servers-memory "$CLUSTER_MEMORY"
 
 # the subject asks for a dedicated gitlab namespace, on top of part 3's two
 for ns in argocd dev gitlab; do
@@ -110,6 +111,7 @@ helm upgrade --install gitlab gitlab/gitlab \
 
 echo ""
 echo "=== Cluster ready ==="
+echo "Node memory budget: $CLUSTER_MEMORY"
 echo "Wait until every GitLab pod is Running or Completed (5 to 10 minutes):"
 echo "  kubectl get pods -n gitlab"
 echo "Then run: ./scripts/gitlab-setup.sh"
