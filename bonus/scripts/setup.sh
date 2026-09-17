@@ -13,7 +13,7 @@ CONFS_DIR="$SCRIPT_DIR/../confs"
 # chart versions are pinned so the bonus installs identically every time
 POSTGRESQL_VERSION="16.7.27"
 REDIS_VERSION="27.0.18"
-GITLAB_VERSION="10.0.0"
+GITLAB_VERSION="10.4.0"
 
 #   Cluster
 CLUSTER_MEMORY="16g"
