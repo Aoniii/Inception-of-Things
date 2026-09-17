@@ -82,6 +82,12 @@ registry:
 
 gitlab:
   toolbox:
+    ressources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        memory: 1536Mi
     backups:
       objectStorage:
         config:
@@ -90,11 +96,38 @@ gitlab:
   webservice:
     minReplicas: 1
     maxReplicas: 1
+    workerProcesses: 2
+    ressources:
+      requests:
+        cpu: 200m
+        memory: 1536Mi
+      limits:
+        memory: 3Mi
   sidekiq:
     minReplicas: 1
     maxReplicas: 1
+    concurrency: 5
+    ressources:
+      requests:
+        cpu: 200m
+        memory: 1Gi
+      limits:
+        memory: 2Gi
   gitlab-shell:
     minReplicas: 1
     maxReplicas: 1
+    ressources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        memory: 256Mi
+  migrations:
+    ressources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1536Mi
   gitlab-exporter:
     enabled: false
