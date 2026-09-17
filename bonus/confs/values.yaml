@@ -103,6 +103,13 @@ gitlab:
         memory: 1536Mi
       limits:
         memory: 3Mi
+    workhorses:
+      ressources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
   sidekiq:
     minReplicas: 1
     maxReplicas: 1
@@ -113,6 +120,14 @@ gitlab:
         memory: 1Gi
       limits:
         memory: 2Gi
+  gitaly:
+    ressources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        memory: 1Gi
+    persistence: 5Gi
   gitlab-shell:
     minReplicas: 1
     maxReplicas: 1
