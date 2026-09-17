@@ -1,0 +1,48 @@
+# GitLab chart 10.0.0 ships GitLab 19, which only accepts PostgreSQL 17, so the
+# PostgreSQL chart is pinned to 16.7.27 (appVersion 17.6.0) rather than a newer
+# one shipping PostgreSQL 18.
+#
+# Bitnami moved its free versioned images to the 'bitnamilegacy' repository in
+# August 2025, so the chart's default 'bitnami/postgresql' no longer resolves.
+# The tag below is the exact one the chart expects, only from the legacy repo,
+# which is why image verification has to be waived.
+global:
+  security:
+    allowInsecureImages: true
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/postgresql
+  tag: 17.6.0-debian-12-r4
+
+auth:
+  username: gitlab
+  password: gitlab-password
+  database: gitlabhq_production
+  # pinned instead of generated: the init scripts below log in as postgres
+  postgresPassword: gitlab-password
+
+primary:
+  persistence:
+    size: 2Gi
+  resources:
+    requests:
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  livenessProbe:
+    initialDelaySeconds: 120
+  readinessProbe:
+    initialDelaySeconds: 120
+  # GitLab requires these, but cannot create them itself: the gitlab user is
+  # not a superuser, so the migrations job would fail on 'permission denied'.
+  # Without the password the container exits 2 right after running the script.
+  initdb:
+    user: postgres
+    password: gitlab-password
+    scripts:
+      00_extensions.sql: |
+        CREATE EXTENSION IF NOT EXISTS pg_trgm;
+        CREATE EXTENSION IF NOT EXISTS btree_gist;
+        CREATE EXTENSION IF NOT EXISTS plpgsql;
+        CREATE EXTENSION IF NOT EXISTS amcheck;

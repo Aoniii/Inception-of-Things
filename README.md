@@ -789,10 +789,24 @@ registry (MinIO).
 **Pinned chart versions.** In `setup.sh`:
 
 ```sh
-POSTGRESQL_VERSION="18.8.4"
+POSTGRESQL_VERSION="16.7.27"
 REDIS_VERSION="27.0.18"
 GITLAB_VERSION="10.0.0"
 ```
+
+Mind the trap: these are *chart* versions, not application versions. PostgreSQL
+chart `16.7.27` ships PostgreSQL 17.6 — the two numbering schemes are unrelated.
+
+Picking `16.7.27` is deliberate. GitLab chart `10.0.0` ships GitLab 19, which
+accepts **only** PostgreSQL 17; newer PostgreSQL charts already ship
+PostgreSQL 18, and `gitlab-migrations`, `webservice` and `sidekiq` then go into
+CrashLoopBackOff.
+
+The rest of the story is in `bonus/confs/postgresql.yaml`: Bitnami moved its
+free versioned images to `bitnamilegacy` in August 2025, so the image the chart
+expects has to be repointed, and the extensions GitLab requires (`pg_trgm`,
+`btree_gist`, `plpgsql`, `amcheck`) must be created by a superuser — the
+`gitlab` user is not one.
 
 Without `--version`, Helm installs whatever is newest *at that moment*. Two runs
 a month apart give two different versions. Since Bitnami restricted free access
@@ -807,7 +821,7 @@ The same cluster as Part 3, plus a third namespace:
 - **`gitlab`** — GitLab, PostgreSQL, Redis, MinIO
 - two port mappings: `8888:30888` for the application, `8443:30443` for the
   GitLab web interface
-- `--servers-memory 12g`, a cap on the cluster container so it cannot starve the
+- `--servers-memory 16g`, a cap on the cluster container so it cannot starve the
   host VM
 
 Argo CD's `Application` now points at the in-cluster address:

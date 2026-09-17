@@ -11,12 +11,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFS_DIR="$SCRIPT_DIR/../confs"
 
 # chart versions are pinned so the bonus installs identically every time
-POSTGRESQL_VERSION="18.8.4"
+POSTGRESQL_VERSION="16.7.27"
 REDIS_VERSION="27.0.18"
 GITLAB_VERSION="10.0.0"
 
 #   Cluster
-CLUSTER_MEMORY="12g"
+CLUSTER_MEMORY="16g"
 
 # p3 and the bonus share the cluster name, so start from a clean one
 if k3d cluster list --no-headers 2>/dev/null | grep -q '^iot '; then
@@ -46,18 +46,12 @@ fi
 helm repo add gitlab https://charts.gitlab.io/
 helm repo update
 
+# GitLab 19 (chart 10.0.0) only supports PostgreSQL 17; see confs/postgresql.yaml
 helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql \
     --version "$POSTGRESQL_VERSION" \
     --namespace gitlab \
     --wait --timeout 10m \
-    --set auth.username=gitlab \
-    --set auth.password=gitlab-password \
-    --set auth.database=gitlabhq_production \
-    --set primary.persistence.size=2Gi \
-    --set primary.resources.requests.memory=512Mi \
-    --set primary.resources.limits.memory=1Gi \
-    --set primary.livenessProbe.initialDelaySeconds=120 \
-    --set primary.readinessProbe.initialDelaySeconds=120
+    -f "$CONFS_DIR/postgresql.yaml"
 
 helm upgrade --install redis oci://registry-1.docker.io/bitnamicharts/redis \
     --version "$REDIS_VERSION" \

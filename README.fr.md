@@ -806,10 +806,25 @@ compatible S3 pour les artefacts, les uploads et le registry (MinIO).
 **Versions de charts épinglées.** Dans `setup.sh` :
 
 ```sh
-POSTGRESQL_VERSION="18.8.4"
+POSTGRESQL_VERSION="16.7.27"
 REDIS_VERSION="27.0.18"
 GITLAB_VERSION="10.0.0"
 ```
+
+Attention au piège : ces numéros sont ceux des *charts*, pas des applications.
+Le chart PostgreSQL `16.7.27` embarque PostgreSQL 17.6 — les deux numérotations
+sont indépendantes.
+
+Le choix de `16.7.27` n'est pas anodin. Le chart GitLab `10.0.0` installe
+GitLab 19, qui n'accepte **que** PostgreSQL 17 ; les charts PostgreSQL plus
+récents embarquent déjà PostgreSQL 18, et `gitlab-migrations`, `webservice` et
+`sidekiq` partent alors en CrashLoopBackOff.
+
+Le détail du reste est dans `bonus/confs/postgresql.yaml` : Bitnami a déplacé
+ses images versionnées gratuites vers `bitnamilegacy` en août 2025, donc l'image
+attendue par le chart doit être repointée, et les extensions requises par GitLab
+(`pg_trgm`, `btree_gist`, `plpgsql`, `amcheck`) doivent être créées par un
+superutilisateur — l'utilisateur `gitlab` n'en est pas un.
 
 Sans `--version`, Helm installe ce qui est le plus récent *à cet instant*. Deux
 exécutions à un mois d'intervalle donnent deux versions différentes. Depuis que
@@ -824,7 +839,7 @@ Le même cluster que la partie 3, plus un troisième namespace :
 - **`gitlab`** — GitLab, PostgreSQL, Redis, MinIO
 - deux mappings de ports : `8888:30888` pour l'application, `8443:30443` pour
   l'interface web de GitLab
-- `--servers-memory 12g`, un plafond sur le conteneur du cluster pour qu'il
+- `--servers-memory 16g`, un plafond sur le conteneur du cluster pour qu'il
   n'affame pas la VM hôte
 
 L'`Application` d'Argo CD pointe désormais sur l'adresse interne au cluster :
