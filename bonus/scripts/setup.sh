@@ -16,7 +16,7 @@ REDIS_VERSION="27.0.18"
 GITLAB_VERSION="10.0.0"
 
 #   Cluster
-CLUSTER_MEMORY="8g"
+CLUSTER_MEMORY="12g"
 
 # p3 and the bonus share the cluster name, so start from a clean one
 if k3d cluster list --no-headers 2>/dev/null | grep -q '^iot '; then
